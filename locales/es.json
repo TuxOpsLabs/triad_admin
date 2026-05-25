@@ -49,5 +49,6 @@
     "users.no_users": "No se encontraron usuarios",
     "users.profiles": "Perfiles",
     "users.no_profiles": "Sin perfiles",
-    "users.back": "← Volver a Usuarios"
+    "users.back": "← Volver a Usuarios",
+    "users.not_found": "Usuario no encontrado"
 }

@@ -49,5 +49,6 @@
     "users.no_users": "No users found",
     "users.profiles": "Profiles",
     "users.no_profiles": "No profiles",
-    "users.back": "← Back to Users"
+    "users.back": "← Back to Users",
+    "users.not_found": "User not found"
 }

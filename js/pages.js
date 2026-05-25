@@ -288,7 +288,7 @@ const pages = (() => {
         const u = await api.get(`/admin/users/${params.id}`);
         const profiles = await api.get(`/admin/users/${params.id}/profiles`);
         if (!u || u.detail) {
-            app.innerHTML = `${nav()}<p class="text-red-400">User not found</p>`;
+            app.innerHTML = `${nav()}<p class="text-red-400">${i18n.t("users.not_found")}</p>`;
             return;
         }
         app.innerHTML = `
