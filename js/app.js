@@ -9,7 +9,10 @@
     router.register("/dashboard", pages.dashboard);
     router.register("/reports", pages.reports);
     router.register("/reports/:id", pages.reportDetail);
-    // TODO: sanctions, devices, audit pages (Phase 2)
+    router.register("/sanctions", pages.sanctions);
+    router.register("/devices", pages.devices);
+    router.register("/audit", pages.audit);
+    router.register("/audit/:id", pages.auditChain);
 
     // Language switcher (delegated)
     document.addEventListener("change", async (e) => {

@@ -198,5 +198,149 @@ const pages = (() => {
             </tbody></table>`;
     }
 
-    return { login, dashboard, reports, reportDetail, reviewReport };
+    // --- Sanctions ---
+    async function sanctions(app) {
+        app.innerHTML = `<p class="text-gray-400">${i18n.t("common.loading")}</p>`;
+        const data = await api.get("/admin/sanctions");
+        app.innerHTML = `
+        ${nav()}
+        <h1 class="text-3xl font-bold mb-8">${i18n.t("nav.sanctions")}</h1>
+        <table class="w-full text-sm">
+            <thead><tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="pb-3">Profile</th>
+                <th class="pb-3">Type</th>
+                <th class="pb-3">Reason</th>
+                <th class="pb-3">Starts</th>
+                <th class="pb-3">Ends</th>
+                <th class="pb-3"></th>
+            </tr></thead>
+            <tbody>${data.length ? data.map(s => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3">${s.profile_id.slice(0, 8)}</td>
+                    <td class="py-3">${sanctionBadge(s.type)}</td>
+                    <td class="py-3 text-gray-300">${s.reason || "—"}</td>
+                    <td class="py-3 text-gray-400">${new Date(s.starts_at).toLocaleDateString()}</td>
+                    <td class="py-3 text-gray-400">${s.ends_at ? new Date(s.ends_at).toLocaleDateString() : "Permanent"}</td>
+                    <td class="py-3"><button onclick="pages.removeSanction('${s.id}')" class="text-red-400 hover:text-red-300 text-sm">Remove</button></td>
+                </tr>`).join("") : `<tr><td colspan="6" class="py-8 text-center text-gray-500">No active sanctions</td></tr>`}
+            </tbody>
+        </table>`;
+    }
+
+    async function removeSanction(id) {
+        await api.del(`/admin/sanctions/${id}`);
+        router.resolve();
+    }
+
+    // --- Devices ---
+    async function devices(app) {
+        app.innerHTML = `<p class="text-gray-400">${i18n.t("common.loading")}</p>`;
+        const data = await api.get("/admin/devices/ban");
+        app.innerHTML = `
+        ${nav()}
+        <h1 class="text-3xl font-bold mb-8">${i18n.t("nav.devices")}</h1>
+        <div class="mb-6">
+            <form id="ban-form" class="flex gap-3">
+                <input type="text" id="ban-device-id" placeholder="Device ID" required
+                    class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="ban-reason" placeholder="Reason (optional)"
+                    class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition">Ban Device</button>
+            </form>
+        </div>
+        <table class="w-full text-sm">
+            <thead><tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="pb-3">Device ID</th>
+                <th class="pb-3">Reason</th>
+                <th class="pb-3">Banned At</th>
+                <th class="pb-3"></th>
+            </tr></thead>
+            <tbody>${data.length ? data.map(d => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 font-mono text-sm">${d.device_id}</td>
+                    <td class="py-3 text-gray-300">${d.reason || "—"}</td>
+                    <td class="py-3 text-gray-400">${new Date(d.created_at).toLocaleDateString()}</td>
+                    <td class="py-3"><button onclick="pages.unbanDevice('${d.device_id}')" class="text-green-400 hover:text-green-300 text-sm">Unban</button></td>
+                </tr>`).join("") : `<tr><td colspan="4" class="py-8 text-center text-gray-500">No banned devices</td></tr>`}
+            </tbody>
+        </table>`;
+
+        document.getElementById("ban-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const device_id = document.getElementById("ban-device-id").value;
+            const reason = document.getElementById("ban-reason").value || null;
+            await api.post("/admin/devices/ban", { device_id, reason });
+            router.resolve();
+        });
+    }
+
+    async function unbanDevice(deviceId) {
+        await api.del(`/admin/devices/ban/${deviceId}`);
+        router.resolve();
+    }
+
+    // --- Audit ---
+    async function audit(app) {
+        app.innerHTML = `<p class="text-gray-400">${i18n.t("common.loading")}</p>`;
+        const data = await api.get("/admin/audit-events");
+        app.innerHTML = `
+        ${nav()}
+        <h1 class="text-3xl font-bold mb-8">${i18n.t("nav.audit")}</h1>
+        <table class="w-full text-sm">
+            <thead><tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="pb-3">Actor</th>
+                <th class="pb-3">Action</th>
+                <th class="pb-3">Entity</th>
+                <th class="pb-3">Date</th>
+                <th class="pb-3"></th>
+            </tr></thead>
+            <tbody>${data.map(e => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3">${e.actor_email || e.actor_user_id.slice(0, 8)}</td>
+                    <td class="py-3"><span class="px-2 py-1 rounded text-xs bg-gray-700">${e.action}</span></td>
+                    <td class="py-3 text-gray-400">${e.entity_type || "—"} ${e.entity_id ? e.entity_id.slice(0, 8) : ""}</td>
+                    <td class="py-3 text-gray-400">${new Date(e.created_at).toLocaleString()}</td>
+                    <td class="py-3">${e.entity_id ? `<a href="#/audit/${e.entity_id}" class="text-indigo-400 hover:text-indigo-300">Chain</a>` : ""}</td>
+                </tr>`).join("")}
+            </tbody>
+        </table>`;
+    }
+
+    // --- Audit Chain ---
+    async function auditChain(app, params) {
+        app.innerHTML = `<p class="text-gray-400">${i18n.t("common.loading")}</p>`;
+        const data = await api.get(`/admin/audit-events/${params.id}/chain`);
+        app.innerHTML = `
+        ${nav()}
+        <a href="#/audit" class="text-indigo-400 hover:text-indigo-300 mb-6 inline-block">← Back to Audit</a>
+        <h1 class="text-2xl font-bold mb-6">Audit Chain: ${params.id.slice(0, 8)}...</h1>
+        <div class="space-y-3">
+            ${data.map((e, i) => `
+            <div class="bg-gray-800 rounded-lg p-4 ${i === 0 ? "border-l-4 border-indigo-500" : ""}">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium">${e.action}</span>
+                    <span class="text-xs text-gray-400">${new Date(e.created_at).toLocaleString()}</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    <span>Actor: ${e.actor_email || e.actor_user_id.slice(0, 8)}</span>
+                    <span class="ml-4">Checksum: ${e.checksum.slice(0, 12)}...</span>
+                    ${e.previous_checksum ? `<span class="ml-4">Prev: ${e.previous_checksum.slice(0, 12)}...</span>` : ""}
+                </div>
+                ${e.payload ? `<pre class="mt-2 text-xs text-gray-400 bg-gray-900 rounded p-2 overflow-x-auto">${JSON.stringify(e.payload, null, 2)}</pre>` : ""}
+            </div>`).join("")}
+        </div>`;
+    }
+
+    // --- Helpers ---
+    function sanctionBadge(type) {
+        const colors = {
+            warning: "bg-yellow-900 text-yellow-300",
+            shadowban: "bg-purple-900 text-purple-300",
+            temporary_ban: "bg-orange-900 text-orange-300",
+            permanent_ban: "bg-red-900 text-red-300",
+        };
+        return `<span class="px-2 py-1 rounded text-xs ${colors[type] || "bg-gray-700"}">${type}</span>`;
+    }
+
+    return { login, dashboard, reports, reportDetail, reviewReport, sanctions, removeSanction, devices, unbanDevice, audit, auditChain };
 })();
