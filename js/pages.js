@@ -12,18 +12,35 @@ const pages = (() => {
             <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
                 <h1 class="text-2xl font-bold text-center mb-8">${i18n.t("login.title")}</h1>
                 <div id="login-error" class="hidden bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded mb-6"></div>
-                <form id="login-form" class="space-y-6">
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                        <input type="email" name="email" id="email" required
-                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="${i18n.t("login.email_placeholder")}">
-                    </div>
-                    <button type="submit"
-                        class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition">
-                        ${i18n.t("login.send_magic_link")}
-                    </button>
-                </form>
+                <div id="login-step-email">
+                    <form id="email-form" class="space-y-6">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                            <input type="email" name="email" id="email" required
+                                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="${i18n.t("login.email_placeholder")}">
+                        </div>
+                        <button type="submit"
+                            class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition">
+                            ${i18n.t("login.send_magic_link")}
+                        </button>
+                    </form>
+                </div>
+                <div id="login-step-code" class="hidden">
+                    <form id="code-form" class="space-y-6">
+                        <p class="text-sm text-gray-400 mb-4">Code sent to <span id="sent-email" class="text-white"></span></p>
+                        <div>
+                            <label for="code" class="block text-sm font-medium text-gray-300 mb-2">Code</label>
+                            <input type="text" name="code" id="code" required maxlength="6" pattern="[0-9]{6}"
+                                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-center text-2xl tracking-widest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="000000">
+                        </div>
+                        <button type="submit"
+                            class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition">
+                            Verify
+                        </button>
+                    </form>
+                </div>
                 ${socialEnabled ? `
                 <div class="mt-6 flex items-center">
                     <div class="flex-1 border-t border-gray-700"></div>
@@ -38,11 +55,27 @@ const pages = (() => {
             </div>
         </div>`;
 
-        document.getElementById("login-form").addEventListener("submit", async (e) => {
+        let userEmail = "";
+
+        document.getElementById("email-form").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const email = document.getElementById("email").value;
-            // For PoC: auto-login via OTP mock
-            const result = await api.post("/auth/verify-otp", { email, code: "000000" });
+            userEmail = document.getElementById("email").value;
+            const err = document.getElementById("login-error");
+            err.classList.add("hidden");
+
+            await api.post("/auth/request-otp", { email: userEmail });
+
+            document.getElementById("login-step-email").classList.add("hidden");
+            document.getElementById("login-step-code").classList.remove("hidden");
+            document.getElementById("sent-email").textContent = userEmail;
+            document.getElementById("code").focus();
+        });
+
+        document.getElementById("code-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const code = document.getElementById("code").value;
+            const result = await api.post("/auth/verify-otp", { email: userEmail, code });
+
             if (result && result.access_token) {
                 api.setToken(result.access_token);
                 router.navigate("/dashboard");
