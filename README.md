@@ -8,7 +8,7 @@ Static SPA dashboard for Triad moderation and administration.
 - Tailwind CSS (CDN)
 - i18n via JSON locale files
 - Mock API for development
-- Deployed to Cloudflare R2 on push to main
+- Deployed to Gitlab Pages on push to main
 
 ## Development
 
